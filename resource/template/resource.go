@@ -15,40 +15,41 @@ import (
 	"text/template"
 
 	"github.com/BurntSushi/toml"
-	"github.com/kelseyhightower/confd/backends"
-	"github.com/kelseyhightower/confd/log"
-	util "github.com/kelseyhightower/confd/util"
 	"github.com/kelseyhightower/memkv"
+	"github.com/moooofly/confd/backends"
+	"github.com/moooofly/confd/log"
+	util "github.com/moooofly/confd/util"
 	"github.com/xordataexchange/crypt/encoding/secconf"
+	yaml "gopkg.in/yaml.v2"
 )
 
 type Config struct {
-	ConfDir       string `toml:"confdir"`
+	ConfDir       string `toml:"confdir" yaml:"confdir"`
 	ConfigDir     string
 	KeepStageFile bool
-	Noop          bool   `toml:"noop"`
-	Prefix        string `toml:"prefix"`
+	Noop          bool   `toml:"noop" yaml:"noop"`
+	Prefix        string `toml:"prefix" yaml:"prefix"`
 	StoreClient   backends.StoreClient
-	SyncOnly      bool `toml:"sync-only"`
+	SyncOnly      bool `toml:"sync-only" yaml:"sync-only"`
 	TemplateDir   string
 	PGPPrivateKey []byte
 }
 
 // TemplateResourceConfig holds the parsed template resource.
 type TemplateResourceConfig struct {
-	TemplateResource TemplateResource `toml:"template"`
+	TemplateResource TemplateResource `toml:"template" yaml:"template"`
 }
 
 // TemplateResource is the representation of a parsed template resource.
 type TemplateResource struct {
-	CheckCmd      string `toml:"check_cmd"`
+	CheckCmd      string `toml:"check_cmd" yaml:"check_cmd"`
 	Dest          string
 	FileMode      os.FileMode
 	Gid           int
 	Keys          []string
 	Mode          string
 	Prefix        string
-	ReloadCmd     string `toml:"reload_cmd"`
+	ReloadCmd     string `toml:"reload_cmd" yaml:"reload_cmd"`
 	Src           string
 	StageFile     *os.File
 	Uid           int
@@ -74,10 +75,26 @@ func NewTemplateResource(path string, config Config) (*TemplateResource, error) 
 	// unset from configuration.
 	tc := &TemplateResourceConfig{TemplateResource{Uid: -1, Gid: -1}}
 
-	log.Debug("Loading template resource from " + path)
-	_, err := toml.DecodeFile(path, &tc)
+	log.Info("Loading template resource from " + path)
+
+	// NOTE: support .toml, .yaml and .json
+	contents, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("Cannot process template resource %s - %s", path, err.Error())
+	}
+
+	if strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml") || strings.HasSuffix(path, ".json") {
+		err = yaml.Unmarshal(contents, &tc)
+		if err != nil {
+			return nil, fmt.Errorf("Cannot process template resource %s - %s", path, err.Error())
+		}
+	}
+
+	if strings.HasSuffix(path, ".toml") {
+		_, err = toml.Decode(string(contents), &tc)
+		if err != nil {
+			return nil, fmt.Errorf("Cannot process template resource %s - %s", path, err.Error())
+		}
 	}
 
 	tr := tc.TemplateResource
