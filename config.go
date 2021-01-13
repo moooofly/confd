@@ -60,16 +60,10 @@ func init() {
 	flag.StringVar(&config.Prefix, "prefix", "", "key path prefix")
 	flag.BoolVar(&config.PrintVersion, "version", false, "print version and exit")
 	flag.BoolVar(&config.SyncOnly, "sync-only", false, "sync without check_cmd and reload_cmd")
-	flag.StringVar(&config.AuthType, "auth-type", "", "Vault auth backend type to use (only used with -backend=vault)")
-	flag.StringVar(&config.AppID, "app-id", "", "Vault app-id to use with the app-id backend (only used with -backend=vault and auth-type=app-id)")
-	flag.StringVar(&config.UserID, "user-id", "", "Vault user-id to use with the app-id backend (only used with -backend=value and auth-type=app-id)")
-	flag.StringVar(&config.RoleID, "role-id", "", "Vault role-id to use with the AppRole, Kubernetes backends (only used with -backend=vault and either auth-type=app-role or auth-type=kubernetes)")
-	flag.StringVar(&config.SecretID, "secret-id", "", "Vault secret-id to use with the AppRole backend (only used with -backend=vault and auth-type=app-role)")
-	flag.StringVar(&config.Path, "path", "", "Vault mount path of the auth method (only used with -backend=vault)")
 	flag.StringVar(&config.Table, "table", "", "the name of the DynamoDB table (only used with -backend=dynamodb)")
 	flag.StringVar(&config.Separator, "separator", "", "the separator to replace '/' with when looking up keys in the backend, prefixed '/' will also be removed (only used with -backend=redis)")
-	flag.StringVar(&config.Username, "username", "", "the username to authenticate as (only used with vault and etcd backends)")
-	flag.StringVar(&config.Password, "password", "", "the password to authenticate with (only used with vault and etcd backends)")
+	flag.StringVar(&config.Username, "username", "", "the username to authenticate as (only used with etcd backends)")
+	flag.StringVar(&config.Password, "password", "", "the password to authenticate with (only used with etcd backends)")
 	flag.BoolVar(&config.Watch, "watch", false, "enable watch support")
 }
 
@@ -131,8 +125,6 @@ func initConfig() error {
 			config.BackendNodes = []string{"127.0.0.1:2379"}
 		case "redis":
 			config.BackendNodes = []string{"127.0.0.1:6379"}
-		case "vault":
-			config.BackendNodes = []string{"http://127.0.0.1:8200"}
 		case "zookeeper":
 			config.BackendNodes = []string{"127.0.0.1:2181"}
 		}
