@@ -5,10 +5,8 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"net"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"github.com/BurntSushi/toml"
@@ -27,8 +25,6 @@ type Config struct {
 	TemplateConfig
 	BackendsConfig
 	Interval     int    `toml:"interval" yaml:"interval"`
-	SRVDomain    string `toml:"srv_domain" yaml:"srv_domain"`
-	SRVRecord    string `toml:"srv_record" yaml:"srv_record"`
 	LogLevel     string `toml:"log-level" yaml:"log-level"`
 	Watch        bool   `toml:"watch" yaml:"watch"`
 	PrintVersion bool
@@ -63,9 +59,6 @@ func init() {
 	flag.BoolVar(&config.OneTime, "onetime", false, "run once and exit")
 	flag.StringVar(&config.Prefix, "prefix", "", "key path prefix")
 	flag.BoolVar(&config.PrintVersion, "version", false, "print version and exit")
-	flag.StringVar(&config.Scheme, "scheme", "http", "the backend URI scheme for nodes retrieved from DNS SRV records (http or https)")
-	flag.StringVar(&config.SRVDomain, "srv-domain", "", "the name of the resource record")
-	flag.StringVar(&config.SRVRecord, "srv-record", "", "the SRV record to search for backends nodes. Example: _etcd-client._tcp.example.com")
 	flag.BoolVar(&config.SyncOnly, "sync-only", false, "sync without check_cmd and reload_cmd")
 	flag.StringVar(&config.AuthType, "auth-type", "", "Vault auth backend type to use (only used with -backend=vault)")
 	flag.StringVar(&config.AppID, "app-id", "", "Vault app-id to use with the app-id backend (only used with -backend=vault and auth-type=app-id)")
@@ -123,29 +116,6 @@ func initConfig() error {
 		log.SetLevel(config.LogLevel)
 	}
 
-	if config.SRVDomain != "" && config.SRVRecord == "" {
-		config.SRVRecord = fmt.Sprintf("_%s._tcp.%s.", config.Backend, config.SRVDomain)
-	}
-
-	// Update BackendNodes from SRV records.
-	if config.Backend != "env" && config.SRVRecord != "" {
-		log.Info("SRV record set to " + config.SRVRecord)
-		srvNodes, err := getBackendNodesFromSRV(config.SRVRecord)
-		if err != nil {
-			return errors.New("Cannot get nodes from SRV records " + err.Error())
-		}
-
-		switch config.Backend {
-		case "etcd":
-			vsm := make([]string, len(srvNodes))
-			for i, v := range srvNodes {
-				vsm[i] = config.Scheme + "://" + v
-			}
-			srvNodes = vsm
-		}
-
-		config.BackendNodes = srvNodes
-	}
 	if len(config.BackendNodes) == 0 {
 		switch config.Backend {
 		case "consul":
@@ -189,22 +159,6 @@ func initConfig() error {
 	config.ConfigDir = filepath.Join(config.ConfDir, "conf.d")
 	config.TemplateDir = filepath.Join(config.ConfDir, "templates")
 	return nil
-}
-
-func getBackendNodesFromSRV(record string) ([]string, error) {
-	nodes := make([]string, 0)
-
-	// Ignore the CNAME as we don't need it.
-	_, addrs, err := net.LookupSRV("", "", record)
-	if err != nil {
-		return nodes, err
-	}
-	for _, srv := range addrs {
-		host := strings.TrimRight(srv.Target, ".")
-		port := strconv.FormatUint(uint64(srv.Port), 10)
-		nodes = append(nodes, net.JoinHostPort(host, port))
-	}
-	return nodes, nil
 }
 
 func processEnv() {
