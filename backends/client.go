@@ -9,7 +9,6 @@ import (
 	"github.com/moooofly/confd/backends/etcd"
 	"github.com/moooofly/confd/backends/etcdv3"
 	"github.com/moooofly/confd/backends/file"
-	"github.com/moooofly/confd/backends/rancher"
 	"github.com/moooofly/confd/backends/redis"
 	"github.com/moooofly/confd/backends/zookeeper"
 	"github.com/moooofly/confd/log"
@@ -53,8 +52,6 @@ func New(config Config) (StoreClient, error) {
 		return etcdv3.NewEtcdClient(backendNodes, config.ClientCert, config.ClientKey, config.ClientCaKeys, config.BasicAuth, config.Username, config.Password)
 	case "zookeeper":
 		return zookeeper.NewZookeeperClient(backendNodes)
-	case "rancher":
-		return rancher.NewRancherClient(backendNodes)
 	case "redis":
 		return redis.NewRedisClient(backendNodes, config.ClientKey, config.Separator)
 	case "env":
