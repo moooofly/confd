@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -60,7 +59,6 @@ func init() {
 	flag.StringVar(&config.Prefix, "prefix", "", "key path prefix")
 	flag.BoolVar(&config.PrintVersion, "version", false, "print version and exit")
 	flag.BoolVar(&config.SyncOnly, "sync-only", false, "sync without check_cmd and reload_cmd")
-	flag.StringVar(&config.Table, "table", "", "the name of the DynamoDB table (only used with -backend=dynamodb)")
 	flag.StringVar(&config.Separator, "separator", "", "the separator to replace '/' with when looking up keys in the backend, prefixed '/' will also be removed (only used with -backend=redis)")
 	flag.StringVar(&config.Username, "username", "", "the username to authenticate as (only used with etcd backends)")
 	flag.StringVar(&config.Password, "password", "", "the password to authenticate with (only used with etcd backends)")
@@ -134,8 +132,7 @@ func initConfig() error {
 
 	if config.Watch {
 		unsupportedBackends := map[string]bool{
-			"dynamodb": true,
-			"ssm":      true,
+			"ssm": true,
 		}
 
 		if unsupportedBackends[config.Backend] {
@@ -144,9 +141,6 @@ func initConfig() error {
 		}
 	}
 
-	if config.Backend == "dynamodb" && config.Table == "" {
-		return errors.New("No DynamoDB table configured")
-	}
 	log.Info("[initConfig] ConfDir (for conf.d and templates) => %s", config.ConfDir)
 	config.ConfigDir = filepath.Join(config.ConfDir, "conf.d")
 	config.TemplateDir = filepath.Join(config.ConfDir, "templates")

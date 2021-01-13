@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/moooofly/confd/backends/consul"
-	"github.com/moooofly/confd/backends/dynamodb"
 	"github.com/moooofly/confd/backends/env"
 	"github.com/moooofly/confd/backends/etcd"
 	"github.com/moooofly/confd/backends/etcdv3"
@@ -63,10 +62,6 @@ func New(config Config) (StoreClient, error) {
 		return env.NewEnvClient()
 	case "file":
 		return file.NewFileClient(config.YAMLFile, config.Filter)
-	case "dynamodb":
-		table := config.Table
-		log.Info("DynamoDB table set to " + table)
-		return dynamodb.NewDynamoDBClient(table)
 	case "ssm":
 		return ssm.New()
 	}
