@@ -10,9 +10,12 @@ build:
 install:
 	@echo "Installing confd..."
 	@install -c bin/confd /usr/local/bin/confd
+	@install -c bin/confd /go/src/github.com/moooofly/playground/play_golang/confd_example
 
 clean:
 	@rm -f bin/*
+	@rm -f /usr/local/bin/confd
+	@rm -f /go/src/github.com/moooofly/playground/play_golang/confd_example/confd
 
 test:
 	@echo "Running tests..."
