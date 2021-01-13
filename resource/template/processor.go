@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kelseyhightower/confd/log"
-	util "github.com/kelseyhightower/confd/util"
+	"github.com/moooofly/confd/log"
+	util "github.com/moooofly/confd/util"
 )
 
 type Processor interface {
@@ -111,15 +111,30 @@ func (p *watchProcessor) monitorPrefix(t *TemplateResource) {
 func getTemplateResources(config Config) ([]*TemplateResource, error) {
 	var lastError error
 	templates := make([]*TemplateResource, 0)
-	log.Debug("Loading template resources from confdir " + config.ConfDir)
+	log.Debug("Loading template resources from confdir '%s'", config.ConfDir)
 	if !util.IsFileExist(config.ConfDir) {
 		log.Warning(fmt.Sprintf("Cannot load template resources: confdir '%s' does not exist", config.ConfDir))
 		return nil, nil
 	}
-	paths, err := util.RecursiveFilesLookup(config.ConfigDir, "*toml")
+
+	// NOTE: support .toml, .yaml and .json format
+	paths4toml, err := util.RecursiveFilesLookup(config.ConfigDir, "*toml")
 	if err != nil {
 		return nil, err
 	}
+
+	paths4yaml, err := util.RecursiveFilesLookup(config.ConfigDir, "*yaml")
+	if err != nil {
+		return nil, err
+	}
+
+	paths4json, err := util.RecursiveFilesLookup(config.ConfigDir, "*json")
+	if err != nil {
+		return nil, err
+	}
+
+	paths := []string{}
+	paths = append(append(append(paths, paths4toml...), paths4yaml...), paths4json...)
 
 	if len(paths) < 1 {
 		log.Warning("Found no templates")

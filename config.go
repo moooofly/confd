@@ -12,9 +12,11 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
-	"github.com/kelseyhightower/confd/backends"
-	"github.com/kelseyhightower/confd/log"
-	"github.com/kelseyhightower/confd/resource/template"
+	"gopkg.in/yaml.v2"
+
+	"github.com/moooofly/confd/backends"
+	"github.com/moooofly/confd/log"
+	"github.com/moooofly/confd/resource/template"
 )
 
 type TemplateConfig = template.Config
@@ -24,12 +26,12 @@ type BackendsConfig = backends.Config
 type Config struct {
 	TemplateConfig
 	BackendsConfig
-	Interval      int    `toml:"interval"`
-	SecretKeyring string `toml:"secret_keyring"`
-	SRVDomain     string `toml:"srv_domain"`
-	SRVRecord     string `toml:"srv_record"`
-	LogLevel      string `toml:"log-level"`
-	Watch         bool   `toml:"watch"`
+	Interval      int    `toml:"interval" yaml:"interval"`
+	SecretKeyring string `toml:"secret_keyring" yaml:"secret_keyring"`
+	SRVDomain     string `toml:"srv_domain" yaml:"srv_domain"`
+	SRVRecord     string `toml:"srv_record" yaml:"srv_record"`
+	LogLevel      string `toml:"log-level" yaml:"log-level"`
+	Watch         bool   `toml:"watch" yaml:"watch"`
 	PrintVersion  bool
 	ConfigFile    string
 	OneTime       bool
@@ -44,9 +46,14 @@ func init() {
 	flag.StringVar(&config.ClientCaKeys, "client-ca-keys", "", "client ca keys")
 	flag.StringVar(&config.ClientCert, "client-cert", "", "the client cert")
 	flag.StringVar(&config.ClientKey, "client-key", "", "the client key")
-        flag.BoolVar(&config.ClientInsecure, "client-insecure", false, "Allow connections to SSL sites without certs (only used with -backend=etcd)")
+	flag.BoolVar(&config.ClientInsecure, "client-insecure", false, "Allow connections to SSL sites without certs (only used with -backend=etcd)")
+
+	// used as base dir for conf.d and templates
 	flag.StringVar(&config.ConfDir, "confdir", "/etc/confd", "confd conf directory")
-	flag.StringVar(&config.ConfigFile, "config-file", "/etc/confd/confd.toml", "the confd config file")
+
+	// NOTE: support both toml and yaml
+	flag.StringVar(&config.ConfigFile, "config-file", "/etc/confd/confd.yaml", "the confd config file, support both YAML and Toml format")
+
 	flag.Var(&config.YAMLFile, "file", "the YAML file to watch for changes (only used with -backend=file)")
 	flag.StringVar(&config.Filter, "filter", "*", "files filter (only used with -backend=file)")
 	flag.IntVar(&config.Interval, "interval", 600, "backend polling interval")
@@ -81,19 +88,33 @@ func init() {
 // settings from flags set on the command line.
 // It returns an error if any.
 func initConfig() error {
+	log.Info("[initConfig] ConfigFile (for confd) => %s", config.ConfigFile)
 	_, err := os.Stat(config.ConfigFile)
 	if os.IsNotExist(err) {
-		log.Debug("Skipping confd config file.")
+		log.Warning("Skipping confd config file. (IsNotExist)")
 	} else {
-		log.Debug("Loading " + config.ConfigFile)
+		log.Info("Loading " + config.ConfigFile)
 		configBytes, err := ioutil.ReadFile(config.ConfigFile)
 		if err != nil {
 			return err
 		}
 
-		_, err = toml.Decode(string(configBytes), &config)
-		if err != nil {
-			return err
+		name := strings.SplitN(filepath.Base(config.ConfigFile), ".", 2)
+		switch name[1] {
+		case "yaml", "yml":
+			log.Info("[initConfig] do yaml.Unmarshal")
+			err = yaml.Unmarshal(configBytes, &config)
+			if err != nil {
+				return err
+			}
+		case "toml":
+			log.Info("[initConfig] do toml.Decode")
+			_, err = toml.Decode(string(configBytes), &config)
+			if err != nil {
+				return err
+			}
+		default:
+			log.Fatal("[initConfig] not support '%s' format", name[1])
 		}
 	}
 
@@ -178,6 +199,7 @@ func initConfig() error {
 	if config.Backend == "dynamodb" && config.Table == "" {
 		return errors.New("No DynamoDB table configured")
 	}
+	log.Info("[initConfig] ConfDir (for conf.d and templates) => %s", config.ConfDir)
 	config.ConfigDir = filepath.Join(config.ConfDir, "conf.d")
 	config.TemplateDir = filepath.Join(config.ConfDir, "templates")
 	return nil
