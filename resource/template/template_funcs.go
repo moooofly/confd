@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net"
 	"os"
 	"path"
@@ -36,7 +35,6 @@ func newFuncMap() map[string]interface{} {
 	m["lookupIP"] = LookupIP
 	m["lookupIPV4"] = LookupIPV4
 	m["lookupIPV6"] = LookupIPV6
-	m["lookupSRV"] = LookupSRV
 	m["fileExists"] = util.IsFileExist
 	m["base64Encode"] = Base64Encode
 	m["base64Decode"] = Base64Decode
@@ -202,31 +200,6 @@ func LookupIPV4(data string) []string {
 		}
 	}
 	return addresses
-}
-
-type sortSRV []*net.SRV
-
-func (s sortSRV) Len() int {
-	return len(s)
-}
-
-func (s sortSRV) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
-}
-
-func (s sortSRV) Less(i, j int) bool {
-	str1 := fmt.Sprintf("%s%d%d%d", s[i].Target, s[i].Port, s[i].Priority, s[i].Weight)
-	str2 := fmt.Sprintf("%s%d%d%d", s[j].Target, s[j].Port, s[j].Priority, s[j].Weight)
-	return str1 < str2
-}
-
-func LookupSRV(service, proto, name string) []*net.SRV {
-	_, addrs, err := net.LookupSRV(service, proto, name)
-	if err != nil {
-		return []*net.SRV{}
-	}
-	sort.Sort(sortSRV(addrs))
-	return addrs
 }
 
 func Base64Encode(data string) string {
