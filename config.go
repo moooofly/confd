@@ -34,35 +34,41 @@ type Config struct {
 var config Config
 
 func init() {
-	flag.StringVar(&config.AuthToken, "auth-token", "", "Auth bearer token to use")
-	flag.StringVar(&config.Backend, "backend", "etcd", "backend to use")
-	flag.BoolVar(&config.BasicAuth, "basic-auth", false, "Use Basic Auth to authenticate (only used with -backend=consul and -backend=etcd)")
-	flag.StringVar(&config.ClientCaKeys, "client-ca-keys", "", "client ca keys")
-	flag.StringVar(&config.ClientCert, "client-cert", "", "the client cert")
-	flag.StringVar(&config.ClientKey, "client-key", "", "the client key")
-	flag.BoolVar(&config.ClientInsecure, "client-insecure", false, "Allow connections to SSL sites without certs (only used with -backend=etcd)")
+	// backend control
+	flag.StringVar(&config.Backend, "backend", "file", "backend to use")
+	flag.Var(&config.BackendNodes, "node", "list of backend nodes for etcd/etcdv3/consul/redis/zookeeper")
 
-	// used as base dir for conf.d and templates
-	flag.StringVar(&config.ConfDir, "confdir", "/etc/confd", "confd conf directory")
-
-	// NOTE: support both toml and yaml
-	flag.StringVar(&config.ConfigFile, "config-file", "/etc/confd/confd.yaml", "the confd config file, support both YAML and Toml format")
-
+	// file backend
 	flag.Var(&config.YAMLFile, "file", "the YAML file to watch for changes (only used with -backend=file)")
 	flag.StringVar(&config.Filter, "filter", "*", "files filter (only used with -backend=file)")
-	flag.IntVar(&config.Interval, "interval", 600, "backend polling interval")
-	flag.BoolVar(&config.KeepStageFile, "keep-stage-file", false, "keep staged files")
-	flag.StringVar(&config.LogLevel, "log-level", "", "level which confd should log messages")
-	flag.Var(&config.BackendNodes, "node", "list of backend nodes")
-	flag.BoolVar(&config.Noop, "noop", false, "only show pending changes")
-	flag.BoolVar(&config.OneTime, "onetime", false, "run once and exit")
-	flag.StringVar(&config.Prefix, "prefix", "", "key path prefix")
-	flag.BoolVar(&config.PrintVersion, "version", false, "print version and exit")
-	flag.BoolVar(&config.SyncOnly, "sync-only", false, "sync without check_cmd and reload_cmd")
-	flag.StringVar(&config.Separator, "separator", "", "the separator to replace '/' with when looking up keys in the backend, prefixed '/' will also be removed (only used with -backend=redis)")
+
+	// etcd/etcdV3/consul backend
+	flag.BoolVar(&config.BasicAuth, "basic-auth", false, "Use Basic Auth to authenticate (only used with -backend=consul and -backend=etcd)")
+	flag.StringVar(&config.ClientCaKeys, "client-ca-keys", "", "client ca keys (only used with consul and etcd backends")
+	flag.StringVar(&config.ClientCert, "client-cert", "", "the client cert (only used with consul and etcd backends")
+	flag.StringVar(&config.ClientKey, "client-key", "", "the client key (only used with consul and etcd backends")
+	flag.BoolVar(&config.ClientInsecure, "client-insecure", false, "Allow connections to SSL sites without certs (only used with -backend=etcd)")
 	flag.StringVar(&config.Username, "username", "", "the username to authenticate as (only used with etcd backends)")
 	flag.StringVar(&config.Password, "password", "", "the password to authenticate with (only used with etcd backends)")
+
+	// base dir for conf.d and templates
+	flag.StringVar(&config.ConfDir, "confdir", "/etc/confd", "confd conf directory")
+	flag.StringVar(&config.ConfigFile, "config-file", "/etc/confd/confd.yaml", "the confd config file, support both YAML and Toml format")
+
+	flag.StringVar(&config.Prefix, "prefix", "", "key path prefix")
+	flag.StringVar(&config.Separator, "separator", "", "the separator to replace '/' with when looking up keys in the backend, prefixed '/' will also be removed (only used with -backend=redis)")
+
+	// mode control
+	flag.BoolVar(&config.OneTime, "onetime", false, "run once and exit")
 	flag.BoolVar(&config.Watch, "watch", false, "enable watch support")
+	flag.IntVar(&config.Interval, "interval", 600, "backend polling interval")
+	flag.BoolVar(&config.SyncOnly, "sync-only", false, "sync without check_cmd and reload_cmd")
+	flag.BoolVar(&config.KeepStageFile, "keep-stage-file", false, "keep staged files")
+	flag.BoolVar(&config.Noop, "noop", false, "only show pending changes")
+
+	// others
+	flag.StringVar(&config.LogLevel, "log-level", "", "level which confd should log messages")
+	flag.BoolVar(&config.PrintVersion, "version", false, "print version and exit")
 }
 
 // initConfig initializes the confd configuration by first setting defaults,
