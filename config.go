@@ -131,9 +131,7 @@ func initConfig() error {
 	log.Info("Backend set to " + config.Backend)
 
 	if config.Watch {
-		unsupportedBackends := map[string]bool{
-			"ssm": true,
-		}
+		unsupportedBackends := map[string]bool{}
 
 		if unsupportedBackends[config.Backend] {
 			log.Info(fmt.Sprintf("Watch is not supported for backend %s. Exiting...", config.Backend))

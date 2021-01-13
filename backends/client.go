@@ -11,7 +11,6 @@ import (
 	"github.com/moooofly/confd/backends/file"
 	"github.com/moooofly/confd/backends/rancher"
 	"github.com/moooofly/confd/backends/redis"
-	"github.com/moooofly/confd/backends/ssm"
 	"github.com/moooofly/confd/backends/zookeeper"
 	"github.com/moooofly/confd/log"
 )
@@ -62,8 +61,6 @@ func New(config Config) (StoreClient, error) {
 		return env.NewEnvClient()
 	case "file":
 		return file.NewFileClient(config.YAMLFile, config.Filter)
-	case "ssm":
-		return ssm.New()
 	}
 	return nil, errors.New("Invalid backend")
 }
